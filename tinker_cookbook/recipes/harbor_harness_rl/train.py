@@ -12,6 +12,7 @@ from __future__ import annotations
 import asyncio
 import base64
 import logging
+import os
 import pickle
 from datetime import datetime
 from typing import cast
@@ -24,6 +25,7 @@ from tinker_cookbook.recipes.harbor_harness_rl.harbor_env import (
     HarborHarnessDatasetBuilder,
     HarborHarnessEnvGroupBuilder,
 )
+from tinker_cookbook.recipes.harbor_harness_rl.harnesses import HarnessConfig, MiniSweAgentConfig
 from tinker_cookbook.rl import train
 from tinker_cookbook.rl.types import EnvGroupBuilder, TrajectoryGroup
 from tinker_cookbook.utils.misc_utils import all_same
@@ -43,17 +45,17 @@ class CLIConfig:
     # Rollout / env
     group_size: int = 1
     groups_per_batch: int = 1
-    max_tokens: int = 60000
 
+    max_tokens: int = 60000
     max_trajectory_tokens: int = 55000
+
     # Max_turns is a misnomer. Harnesses treat max_turns differently
-    # OpenHands treats max_turns as the total number of events (includes tool calls and summarization)
     max_turns: int = 120
     temperature: float = 1.0
-    # Wall-clock budget for the agent's solving loop; the run also stops at
-    # max_turns, whichever comes first. Raise this to actually reach max_turns.
     agent_timeout_sec: float = 60 * 60 * 30
     force_build: bool = False
+
+    harness_config: HarnessConfig = chz.field(default_factory=MiniSweAgentConfig)
 
     # Training
     learning_rate: float = 1e-5
@@ -69,6 +71,10 @@ class CLIConfig:
 
 
 async def cli_main(cli_config: CLIConfig) -> None:
+    # mini-swe reads its API key from the host env for `hosted_vllm`; a constant
+    # dummy avoids the "Please set MSWEA_API_KEY" error. Harmless for others.
+    os.environ.setdefault("MSWEA_API_KEY", "dummy")
+
     run_name = (
         f"harbor_harness_rl_{cli_config.model_name.replace('/', '-')}"
         f"_gs{cli_config.group_size}_gp{cli_config.groups_per_batch}"
@@ -107,6 +113,7 @@ async def cli_main(cli_config: CLIConfig) -> None:
         temperature=cli_config.temperature,
         agent_timeout_sec=cli_config.agent_timeout_sec,
         force_build=cli_config.force_build,
+        harness_config=cli_config.harness_config,
     )
 
     config = train.Config(

@@ -14,7 +14,6 @@ from typing import Any
 import chz
 import tinker
 from harbor.models.trial.config import (
-    AgentConfig,
     EnvironmentConfig,
     TaskConfig,
     TrialConfig,
@@ -86,33 +85,23 @@ class HarborHarnessEnvGroupBuilder(EnvGroupBuilder):
         self.harness_config = harness_config
 
     async def make_envs(self) -> Sequence[Any]:
-        return []  # unused; the custom rollout drives full Harbor trials
+        return []
 
     def logging_tags(self) -> list[str]:
         return [Path(self.task_path).name]
 
     def _trial_config(self, sampling_client_b64: str) -> TrialConfig:
+        agent = self.harness_config.prep_agent(
+            max_turns=self.max_turns,
+            temperature=self.temperature,
+            agent_timeout_sec=self.agent_timeout_sec,
+            max_input_tokens=self.max_trajectory_tokens,
+            max_output_tokens=self.max_tokens - self.max_trajectory_tokens,
+        )
         return TrialConfig(
             task=TaskConfig(path=Path(self.task_path)),
             trial_name=uuid.uuid4().hex[:12],
-            agent=AgentConfig(
-                name="openhands",
-                model_name="hosted_vllm/model",
-                env={"LLM_API_KEY": "dummy"},
-                # Wall-clock budget for the agent.run() phase (independent of
-                # max_iterations); overrides the task's default agent timeout.
-                override_timeout_sec=self.agent_timeout_sec,
-                model_info={
-                    "max_input_tokens": self.max_trajectory_tokens,
-                    "max_output_tokens": self.max_tokens - self.max_trajectory_tokens,
-                },
-                kwargs={
-                    "version": "0.60.0 --prerelease=allow",
-                    "max_iterations": self.max_turns,
-                    "temperature": self.temperature,
-                    "num_retries": 1,
-                },
-            ),
+            agent=agent,
             environment=EnvironmentConfig(
                 import_path=PROXY_IMPORT_PATH,
                 force_build=self.force_build,
@@ -123,7 +112,7 @@ class HarborHarnessEnvGroupBuilder(EnvGroupBuilder):
                     "tinker_sampling_client_b64": sampling_client_b64,
                     "max_input_tokens": self.max_trajectory_tokens,
                     "max_tokens": self.max_tokens,
-                    "harness_config": self.harness_config,
+                    "harness_config": chz.asdict(self.harness_config),
                 },
             ),
         )

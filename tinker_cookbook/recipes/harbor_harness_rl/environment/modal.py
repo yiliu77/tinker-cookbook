@@ -22,6 +22,8 @@ from harbor.environments.modal import ModalEnvironment
 from harbor.models.task.config import NetworkMode, NetworkPolicy
 from modal import Image, Sandbox, Secret
 
+from tinker_cookbook.recipes.harbor_harness_rl.harnesses import HarnessConfig
+
 PROXY_SB_PORT = 8000
 PROXY_DOCKERFILE = Path(__file__).parent / "Dockerfile.proxy"
 PROXY_MODULE = "tinker_cookbook.recipes.harbor_harness_rl.environment.proxy_server"
@@ -40,11 +42,11 @@ class ProxiedModalEnvironment(ModalEnvironment):
 
         # Token budgets the proxy uses (output is the generation cap).
         self._max_input_tokens: int = int(self._kwargs.get("max_input_tokens", 32 * 1024))
-        # Full model context window; the proxy derives the output cap dynamically.
         self._max_tokens: int = int(self._kwargs.get("max_tokens", 65536))
         self._capture_path: str | None = self._kwargs.get("proxy_capture_path")
-        # Optional per-harness setup (writes config files into the sandbox).
-        self._harness_config = self._kwargs.get("harness_config")
+
+        harness_spec = self._kwargs.get("harness_config")
+        self._harness_config = HarnessConfig.from_dict(harness_spec) if harness_spec else None
 
         self._tinker_api_key_env: str = self._kwargs.get("tinker_api_key_env", "TINKER_API_KEY")
         self._tinker_sampling_client_b64: str = self._kwargs["tinker_sampling_client_b64"]
@@ -53,21 +55,20 @@ class ProxiedModalEnvironment(ModalEnvironment):
         self._network_policy = NetworkPolicy(network_mode=NetworkMode.PUBLIC)
         await super().start(force_build)
         await self._start_proxy()
+        assert self.proxy_base_url is not None
 
         self._persistent_env["LLM_BASE_URL"] = self.proxy_base_url
-        await self._apply_harness_config()
+        if self._harness_config is not None:
+            await self._harness_config.prep_environment(self, self.proxy_base_url)
 
-    async def _apply_harness_config(self) -> None:
-        """Drop any harness-specific config files into the sandbox before the agent runs."""
-        if self._harness_config is None or self.proxy_base_url is None:
-            return
-        for path, content in self._harness_config.sandbox_files(self.proxy_base_url).items():
-            parent = os.path.dirname(path)
-            await self._sdk_exec(
-                f"mkdir -p {shlex.quote(parent)} && cat > {shlex.quote(path)} << 'HARNESSCFG'\n"
-                f"{content}\nHARNESSCFG"
-            )
-            self.logger.info("Wrote harness config to %s", path)
+    async def write_sandbox_file(self, path: str, content: str) -> None:
+        """Write ``content`` to ``path`` inside the agent sandbox (creating dirs)."""
+        parent = os.path.dirname(path)
+        await self._sdk_exec(
+            f"mkdir -p {shlex.quote(parent)} && cat > {shlex.quote(path)} << 'HARNESSCFG'\n"
+            f"{content}\nHARNESSCFG"
+        )
+        self.logger.info("Wrote sandbox file %s", path)
 
     async def _start_proxy(self):
         api_key = os.environ.get(self._tinker_api_key_env, "")
