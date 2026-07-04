@@ -51,7 +51,7 @@ class CLIConfig:
     # Max_turns is a misnomer. Harnesses treat max_turns differently
     max_turns: int = 120
     temperature: float = 1.0
-    agent_timeout_sec: float = 60 * 60 * 30
+    agent_timeout_sec: float = 60 * 60  # 1 hour
     force_build: bool = False
 
     harness_config: HarnessConfig = chz.field(default_factory=MiniSweAgentConfig)
