@@ -3,5 +3,13 @@ from tinker_cookbook.recipes.harbor_harness_rl.harnesses.mini_swe_agent import M
 from tinker_cookbook.recipes.harbor_harness_rl.harnesses.openclaw import OpenClawConfig
 from tinker_cookbook.recipes.harbor_harness_rl.harnesses.openhands import OpenHandsConfig
 from tinker_cookbook.recipes.harbor_harness_rl.harnesses.pi import PiConfig
+from tinker_cookbook.recipes.harbor_harness_rl.harnesses.terminus import TerminusConfig
 
-__all__ = ["HarnessConfig", "OpenHandsConfig", "MiniSweAgentConfig", "OpenClawConfig", "PiConfig"]
+__all__ = [
+    "HarnessConfig",
+    "OpenHandsConfig",
+    "MiniSweAgentConfig",
+    "OpenClawConfig",
+    "PiConfig",
+    "TerminusConfig",
+]

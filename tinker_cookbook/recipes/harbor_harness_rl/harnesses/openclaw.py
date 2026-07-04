@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 
 import chz
+from harbor.models.trial.config import AgentConfig
 
 from tinker_cookbook.recipes.harbor_harness_rl.harnesses.base import (
     HarnessConfig,
@@ -29,6 +30,26 @@ class OpenClawConfig(HarnessConfig):
     type: str = "openclaw"
     version: str = ""
     model_name: str = "openai/model"
+    thinking: str = "high"
+
+    def prep_agent(
+        self,
+        *,
+        max_turns: int,
+        temperature: float,
+        agent_timeout_sec: float,
+        max_input_tokens: int,
+        max_output_tokens: int,
+    ) -> AgentConfig:
+        agent = super().prep_agent(
+            max_turns=max_turns,
+            temperature=temperature,
+            agent_timeout_sec=agent_timeout_sec,
+            max_input_tokens=max_input_tokens,
+            max_output_tokens=max_output_tokens,
+        )
+        agent.kwargs["thinking"] = self.thinking
+        return agent
 
     async def prep_environment(self, environment: SandboxPrepEnv, proxy_base_url: str) -> None:
         environment._persistent_env["OPENAI_API_KEY"] = "dummy"
@@ -42,7 +63,7 @@ class OpenClawConfig(HarnessConfig):
                         "baseUrl": proxy_base_url,
                         "api": "openai-completions",
                         "apiKey": "${OPENAI_API_KEY}",
-                        "models": [{"id": "model", "name": "model"}],
+                        "models": [{"id": "model", "name": "model", "reasoning": True}],
                     }
                 }
             },
