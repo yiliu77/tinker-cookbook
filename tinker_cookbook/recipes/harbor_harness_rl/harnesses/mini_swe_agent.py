@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import tempfile
 from pathlib import Path
 
@@ -35,6 +36,7 @@ class MiniSweAgentConfig(HarnessConfig):
         max_input_tokens: int,
         max_output_tokens: int,
     ) -> AgentConfig:
+        os.environ.setdefault("MSWEA_API_KEY", "dummy")
         agent = super().prep_agent(
             max_turns=max_turns,
             temperature=temperature,
@@ -42,8 +44,6 @@ class MiniSweAgentConfig(HarnessConfig):
             max_input_tokens=max_input_tokens,
             max_output_tokens=max_output_tokens,
         )
-        # step_limit is only settable via a config file; harbor reads this host
-        # path at construction, writes it into the container, and passes `-c`.
         config_path = Path(tempfile.gettempdir()) / f"mini_swe_step_limit_{max_turns}.yaml"
         config_path.write_text(f"agent:\n  step_limit: {max_turns}\n")
         agent.kwargs["config_file"] = str(config_path)

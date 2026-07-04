@@ -12,7 +12,6 @@ from __future__ import annotations
 import asyncio
 import base64
 import logging
-import os
 import pickle
 from datetime import datetime
 from typing import cast
@@ -71,10 +70,6 @@ class CLIConfig:
 
 
 async def cli_main(cli_config: CLIConfig) -> None:
-    # mini-swe reads its API key from the host env for `hosted_vllm`; a constant
-    # dummy avoids the "Please set MSWEA_API_KEY" error. Harmless for others.
-    os.environ.setdefault("MSWEA_API_KEY", "dummy")
-
     run_name = (
         f"harbor_harness_rl_{cli_config.model_name.replace('/', '-')}"
         f"_gs{cli_config.group_size}_gp{cli_config.groups_per_batch}"
