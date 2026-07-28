@@ -48,7 +48,7 @@ class CLIConfig:
     max_tokens: int = 60000
     max_trajectory_tokens: int = 55000
 
-    # Max_turns is a misnomer. Harnesses treat max_turns differently
+    # Harnesses treat max_turns differently
     max_turns: int = 120
     temperature: float = 1.0
     agent_timeout_sec: float = 60 * 60  # 1 hour

@@ -11,7 +11,6 @@ from tinker_cookbook.recipes.harbor_harness_rl.harnesses.base import (
     SandboxPrepEnv,
 )
 
-# Pi's config dir (default ~/.pi/agent); PI_CODING_AGENT_DIR overrides it verbatim.
 PI_AGENT_DIR = "/tmp/pi-agent"
 
 
