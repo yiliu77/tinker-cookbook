@@ -86,6 +86,8 @@ async def cli_main(cli_config: CLIConfig) -> None:
         do_remove_constant_reward_groups: bool,
         enable_logging: bool = True,
         strategy=None,
+        termination=None,
+        **_kwargs: object,
     ) -> TrajectoryGroup | None:
         # Ship the live Tinker sampler to the remote proxy via pickle.
         client_b64 = base64.b64encode(pickle.dumps(sampling_client)).decode()

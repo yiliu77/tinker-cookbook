@@ -211,6 +211,8 @@ class TinkerProxy:
             "prompt_token_ids": result.prompt_token_ids,
             "completion_token_ids": result.completion_token_ids,
             "logprobs": result.logprobs,
+            "finish_reason": completion["choices"][0]["finish_reason"],
+            "prompt_cache_hit_tokens": sample.prompt_cache_hit_tokens,
             "response": completion,
         }
         # Dedup consecutive retries
